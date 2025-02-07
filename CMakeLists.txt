@@ -35,13 +35,17 @@ pico_sdk_init()
 
 # Add executable. Default name is the project name, version 0.1
 
-add_executable(protocolos_comunicacao_bitdoglab protocolos_comunicacao_bitdoglab.c )
+add_executable(protocolos_comunicacao_bitdoglab 
+            protocolos_comunicacao_bitdoglab.c 
+            include/matriz_led_control.c
+            include/ssd1306.c
+)
 
 pico_set_program_name(protocolos_comunicacao_bitdoglab "protocolos_comunicacao_bitdoglab")
 pico_set_program_version(protocolos_comunicacao_bitdoglab "0.1")
 
 # Generate PIO header
-pico_generate_pio_header(protocolos_comunicacao_bitdoglab ${CMAKE_CURRENT_LIST_DIR}/blink.pio)
+pico_generate_pio_header(protocolos_comunicacao_bitdoglab ${CMAKE_CURRENT_LIST_DIR}/pio_matrix.pio)
 
 # Modify the below lines to enable/disable output over UART/USB
 pico_enable_stdio_uart(protocolos_comunicacao_bitdoglab 1)
@@ -49,11 +53,13 @@ pico_enable_stdio_usb(protocolos_comunicacao_bitdoglab 0)
 
 # Add the standard library to the build
 target_link_libraries(protocolos_comunicacao_bitdoglab
-        pico_stdlib)
+        pico_stdlib
+        )
 
 # Add the standard include files to the build
 target_include_directories(protocolos_comunicacao_bitdoglab PRIVATE
         ${CMAKE_CURRENT_LIST_DIR}
+        ${CMAKE_CURRENT_LIST_DIR}/include
 )
 
 # Add any user requested libraries
