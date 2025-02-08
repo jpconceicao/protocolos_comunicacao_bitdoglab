@@ -1,3 +1,9 @@
+/*
+* Feito por: Jorge Palma
+* Data: 03/02/2025
+*/
+
+
 #include <stdio.h>
 #include "pico/stdlib.h"
 #include "hardware/i2c.h"
@@ -19,15 +25,11 @@
 #define endereco 0x3C
 ssd1306_t ssd;
 
-// UART defines
-// By default the stdout UART is `uart0`, so we will use the second one
+// por padrão stdout é `uart0`
 #define UART_ID uart0
 #define BAUD_RATE 115200
-
-// Use pins 4 and 5 for UART1
-// Pins can be changed, see the GPIO function select table in the datasheet for information on GPIO assignments
-#define UART_TX_PIN 4
-#define UART_RX_PIN 5
+#define UART_TX_PIN 0
+#define UART_RX_PIN 1
 
 // LED RGB Defines
 #define RED_LED_RGB 13
@@ -56,30 +58,39 @@ char input;
 void setup_gpios();
 void realizar_troca();
 static void gpio_irq_handler(uint gpio, uint32_t events);
-int64_t alarm_callback(alarm_id_t id, void *user_data) ;
 
 int main()
 {
     init_pio_routine(&meu_pio, OUT_PIN);
     setup_gpios();
     
+    // Inicializa a UART
+    uart_init(UART_ID, BAUD_RATE);
+
+    gpio_set_function(UART_TX_PIN, GPIO_FUNC_UART); // Configura o pino 0 para TX
+    gpio_set_function(UART_RX_PIN, GPIO_FUNC_UART); // Configura o pino 1 para RX
+
     gpio_set_irq_enabled_with_callback(BOTAO_A, GPIO_IRQ_EDGE_FALL, true, &gpio_irq_handler);
     gpio_set_irq_enabled_with_callback(BOTAO_B, GPIO_IRQ_EDGE_FALL, true, &gpio_irq_handler);
 
-    bool cor = true;
     while (true) {
-        printf("Hello, world!\n");
 
-        cor = !cor;
-        // Atualiza o conteúdo do display com animações
-        ssd1306_fill(&ssd, !cor); // Limpa o display
-        ssd1306_rect(&ssd, 3, 3, 122, 58, cor, !cor); // Desenha um retângulo
-        ssd1306_draw_string(&ssd, "CEPEDI   TIC37", 8, 10); // Desenha uma string
-        ssd1306_draw_string(&ssd, "EMBARCATECH", 20, 30); // Desenha uma string
-        ssd1306_draw_string(&ssd, "JP TECH", 15, 48); // Desenha uma string      
-        ssd1306_send_data(&ssd); // Atualiza o display
+        if (stdio_usb_connected())
+        {
+            if (scanf("%c", &input) == 1)
+            {   
+                ssd1306_fill(&ssd, false);
+                ssd1306_rect(&ssd, 3, 3, 122, 58, true, false);
+                ssd1306_draw_string(&ssd, "Char Recebido:", 8, 10);
+                ssd1306_draw_char(&ssd, input, 60, 30);
+                ssd1306_send_data(&ssd);
 
-        sleep_ms(1000);
+                if (input >= '0' && input <= '9')
+                {
+                    realizar_troca(input);
+                }
+            }     
+        }
     }
 }
 
@@ -167,41 +178,62 @@ void realizar_troca()
 
 static void gpio_irq_handler(uint gpio, uint32_t events)
 {
-    // Aplicando debouncing na interrupção
     uint32_t tempo_atual = to_us_since_boot(get_absolute_time());
 
-    if (tempo_atual - ultimo_tempo > 220000) // 220 ms de debouncing
+    if (tempo_atual - ultimo_tempo > 220000)
     {
         ultimo_tempo = tempo_atual;
 
-
         if (gpio == BOTAO_A)
         {
-            gpio_put(GREEN_LED_RGB, !gpio_get(GREEN_LED_RGB));
-            printf("Alternando LED VERDE");
-            ssd1306_fill(&ssd, false);
-            ssd1306_send_data(&ssd);
-            ssd1306_draw_string(&ssd, " ALTERNANDO ", 8, 10); // Desenha uma string
-            ssd1306_draw_string(&ssd, "LED VERDE", 20, 30); // Desenha uma string
-            ssd1306_send_data(&ssd);
-
+            bool state = gpio_get(GREEN_LED_RGB);
+            if(state)
+            {
+                gpio_put(GREEN_LED_RGB, !state);
+                printf("Desligando LED VERDE\n");
+                ssd1306_fill(&ssd, false);
+                ssd1306_send_data(&ssd);
+                ssd1306_draw_string(&ssd, " Desligando ", 8, 10);
+                ssd1306_draw_string(&ssd, "LED VERDE", 20, 30);
+                ssd1306_send_data(&ssd);
+            }
+            else
+            {
+                gpio_put(GREEN_LED_RGB, !state);
+                printf("Ligando LED VERDE\n");
+                ssd1306_fill(&ssd, false);
+                ssd1306_send_data(&ssd);
+                ssd1306_draw_string(&ssd, " Ligando ", 8, 10);
+                ssd1306_draw_string(&ssd, "LED VERDE", 20, 30);
+                ssd1306_send_data(&ssd);
+            }
+            
         }
 
         if (gpio == BOTAO_B)
         {
-            gpio_put(BLUE_LED_RGB, !gpio_get(BLUE_LED_RGB));
-            printf("Alternando LED VERDE");
-            ssd1306_fill(&ssd, false);
-            ssd1306_send_data(&ssd);
-            ssd1306_draw_string(&ssd, "ALTERNANDO", 8, 10); // Desenha uma string
-            ssd1306_draw_string(&ssd, "LED AZUL", 20, 30); // Desenha uma string
-            ssd1306_send_data(&ssd);
+            bool state = gpio_get(BLUE_LED_RGB);
+
+            if(state)
+            {
+                gpio_put(BLUE_LED_RGB, !state);
+                printf("Desligando LED AZUL\n");
+                ssd1306_fill(&ssd, false);
+                ssd1306_send_data(&ssd);
+                ssd1306_draw_string(&ssd, " Desligando ", 8, 10); // Desenha uma string
+                ssd1306_draw_string(&ssd, "LED AZUL", 20, 30); // Desenha uma string
+                ssd1306_send_data(&ssd);
+            }
+            else
+            {
+                gpio_put(BLUE_LED_RGB, !state);
+                printf("Ligando LED AZUL\n");
+                ssd1306_fill(&ssd, false);
+                ssd1306_send_data(&ssd);
+                ssd1306_draw_string(&ssd, " Ligando ", 8, 10); // Desenha uma string
+                ssd1306_draw_string(&ssd, "LED AZUL", 20, 30); // Desenha uma string
+                ssd1306_send_data(&ssd);
+            }
         }
     }
-}
-
-int64_t alarm_callback(alarm_id_t id, void *user_data) 
-{
-    // Put your timeout handler code in here
-    return 0;
 }

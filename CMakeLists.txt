@@ -48,8 +48,8 @@ pico_set_program_version(protocolos_comunicacao_bitdoglab "0.1")
 pico_generate_pio_header(protocolos_comunicacao_bitdoglab ${CMAKE_CURRENT_LIST_DIR}/pio_matrix.pio)
 
 # Modify the below lines to enable/disable output over UART/USB
-pico_enable_stdio_uart(protocolos_comunicacao_bitdoglab 1)
-pico_enable_stdio_usb(protocolos_comunicacao_bitdoglab 0)
+pico_enable_stdio_uart(protocolos_comunicacao_bitdoglab 0)
+pico_enable_stdio_usb(protocolos_comunicacao_bitdoglab 1)
 
 # Add the standard library to the build
 target_link_libraries(protocolos_comunicacao_bitdoglab
