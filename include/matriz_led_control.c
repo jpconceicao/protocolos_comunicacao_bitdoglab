@@ -49,7 +49,7 @@ void desenho_pio(double *desenho, pio_t * meu_pio)
         valor_led = matrix_rgb(desenho[24-i], desenho[24-i], desenho[24-i]);
         pio_sm_put_blocking(pio0, 0, valor_led);
     }
-    printf("clock set to %ld\n", clock_get_hz(clk_sys));
+    // printf("clock set to %ld\n", clock_get_hz(clk_sys));
 }
 
 void desenho_pio_rgb(double *desenho, pio_t * meu_pio)
